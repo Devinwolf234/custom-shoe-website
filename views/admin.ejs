@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<h1>Admin Panel</h1>
+
+<% if(!loggedIn){ %>
+
+<form action="/admin" method="POST" class="login">
+
+<input
+type="text"
+name="username"
+placeholder="Username"
+required
+>
+
+<input
+type="password"
+name="password"
+placeholder="Password"
+required
+>
+
+<button type="submit">
+Login
+</button>
+
+<p><%= error %></p>
+
+</form>
+
+<% } else { %>
+
+<form
+action="/upload"
+method="POST"
+enctype="multipart/form-data"
+class="upload-form"
+>
+
+<input
+type="text"
+name="title"
+placeholder="Shoe Title"
+required
+>
+
+<textarea
+name="description"
+placeholder="Description"
+required
+></textarea>
+
+<input
+type="file"
+name="image"
+required
+>
+
+<button type="submit">
+Upload Shoe
+</button>
+
+</form>
+
+<h2>Current Shoes</h2>
+
+<% shoes.forEach(shoe => { %>
+
+<div class="admin-card">
+
+<img
+src="/uploads/<%= shoe.image %>"
+width="150"
+>
+
+<h3><%= shoe.title %></h3>
+
+<form
+action="/delete/<%= shoe.id %>"
+method="POST"
+>
+
+<button class="delete-btn">
+Delete
+</button>
+
+</form>
+
+</div>
+
+<% }) %>
+
+<% } %>
+
+</body>
+</html>

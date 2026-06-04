@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Custom Shoe Designs</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Custom Shoe Designs</h1>
+
+    <<div class="socials">
+        <a href="https://instagram.com/youraccount">Instagram</a>
+        <a href="https://facebook.com/youraccount">Facebook</a>
+        <a href="https://tiktok.com/@youraccount">TikTok</a>
+        <a href="/admin" class="admin-link">Admin Login</a>
+    </div>
+</header>
+
+<section class="hero">
+    <h2>Hand-Painted & Custom Shoes</h2>
+    <p>Browse previous custom projects.</p>
+</section>
+
+<div class="gallery">
+
+<% shoes.forEach(shoe => { %>
+
+<div class="card">
+
+<img
+src="/uploads/<%= shoe.image %>"
+alt="Custom Shoe"
+>
+
+<p><%= shoe.description %></p>
+
+<h3><%= shoe.title %></h3>
+
+<p><%= shoe.description %></p>
+
+</div>
+
+<% }) %>
+
+</div>
+
+</body>
+</html>
