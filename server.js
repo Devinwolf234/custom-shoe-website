@@ -21,6 +21,9 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Multer — temp storage before Cloudinary upload
+// Create temp folder if it doesn't exist
+if (!fs.existsSync('temp')) fs.mkdirSync('temp');
+
 const upload = multer({ dest: 'temp/' });
 
 const ADMIN_USER = 'dad';
