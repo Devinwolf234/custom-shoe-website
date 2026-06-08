@@ -1,48 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>RetroJordanResale</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Jordan Resales</title>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-<header>
-    <h1>RetroJordanResale</h1>
+  <header>
+    <h1>Retro Jordan Resales</h1>
+    <p class="tagline">Hand-Customized Shoes</p>
+    <nav>
+      <a href="https://instagram.com/retrojordanresales" target="_blank">Instagram</a>
+      <a href="https://facebook.com/retrojordanresales" target="_blank">Facebook</a>
+      <a href="/admin" class="admin-link">Admin Login</a>
+    </nav>
+  </header>
 
-    <<div class="socials">
-        <a href="https://instagram.com/retrojordanresale">Instagram</a>
-        <a href="https://facebook.com/retrojordanresale">Facebook</a>
-        <a href="/admin" class="admin-link">Admin Login</a>
-    </div>
-</header>
-
-<section class="hero">
-    <h2>Hand-Painted & Custom Shoes</h2>
+  <section class="hero">
+    <h2>Custom Shoe Gallery</h2>
     <p>Browse previous custom projects.</p>
-</section>
 
-<div class="gallery">
+    <div class="sort-bar">
+      <label for="sortSelect">Sort by:</label>
+      <select id="sortSelect" onchange="sortShoes()">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="brand">By Brand</option>
+        <option value="featured">Featured First</option>
+      </select>
+    </div>
+  </section>
 
-<% shoes.forEach(shoe => { %>
+  <div class="gallery" id="gallery">
+    <% shoes.forEach(shoe => { %>
+      <div class="shoe-card"
+        data-id="<%= shoe.id %>"
+        data-brand="<%= shoe.brand || '' %>"
+        data-featured="<%= shoe.featured ? '1' : '0' %>">
+        <% if (shoe.featured) { %><span class="featured-badge">⭐ Featured</span><% } %>
+        <img src="<%= shoe.image %>" alt="<%= shoe.title %>">
+        <div class="card-info">
+          <p class="shoe-title"><%= shoe.title %></p>
+          <% if (shoe.brand) { %><p class="shoe-brand"><%= shoe.brand %></p><% } %>
+          <% if (shoe.description) { %><p class="shoe-desc"><%= shoe.description %></p><% } %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
 
-<div class="card">
+  <footer>
+    <p>© Retro Jordan Resales. All rights reserved.</p>
+  </footer>
 
-<img
-src="/uploads/<%= shoe.image %>"
-alt="Custom Shoe"
->
-
-<p><%= shoe.description %></p>
-
-<h3><%= shoe.title %></h3>
-
-<p><%= shoe.description %></p>
-
-</div>
-
-<% }) %>
-
-</div>
-
+  <script src="/js/script.js"></script>
 </body>
 </html>

@@ -1,8 +1,20 @@
 [
   {
-    "id": 1780540824711,
-    "title": "Jordan 4",
-    "description": "Pure Money",
-    "image": "1780540824695.png"
+    "id": 1780886250123,
+    "title": "Pure Money",
+    "description": "Jordan 4",
+    "brand": "Jordan",
+    "featured": true,
+    "image": "https://res.cloudinary.com/dxq9l9ggo/image/upload/v1780886248/custom-shoes/nmxbc95v8pv9ez4frrt2.png",
+    "public_id": "custom-shoes/nmxbc95v8pv9ez4frrt2"
+  },
+  {
+    "id": 1780886296965,
+    "title": "Boots",
+    "description": "hunting boots",
+    "brand": "Bogg",
+    "featured": false,
+    "image": "https://res.cloudinary.com/dxq9l9ggo/image/upload/v1780886295/custom-shoes/gibsixawlgyxnt0nbct0.png",
+    "public_id": "custom-shoes/gibsixawlgyxnt0nbct0"
   }
 ]
