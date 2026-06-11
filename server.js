@@ -15,23 +15,36 @@ cloudinary.config({
   api_secret: 'w0LxB3H0Fbhwcw2ZNHwwNvuxgrA'
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.urlencoded({ extended: true }));
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+const IS_PROD = !!process.env.DATABASE_URL;
+let pool;
 
-// Multer — temp storage before Cloudinary upload
-// Create temp folder if it doesn't exist
-if (!fs.existsSync('temp')) fs.mkdirSync('temp');
+if (IS_PROD) {
+  const { Pool } = require('pg');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+}
 
-const upload = multer({ dest: 'temp/' });
+async function initDB() {
+  if (!IS_PROD) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shoes (
+      id SERIAL PRIMARY KEY,
+      title TEXT,
+      description TEXT,
+      brand TEXT,
+      featured BOOLEAN DEFAULT false,
+      image TEXT,
+      public_id TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+}
 
-const ADMIN_USER = 'dad';
-const ADMIN_PASS = 'customshoes';
-
+// Local JSON fallback
 function getShoes() {
-  const dataPath = path.join(__dirname, 'data', 'shoes.json');
-  try { return JSON.parse(fs.readFileSync(dataPath, 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'shoes.json'), 'utf8')); }
   catch { return []; }
 }
 
@@ -39,18 +52,52 @@ function saveShoes(shoes) {
   fs.writeFileSync(path.join(__dirname, 'data', 'shoes.json'), JSON.stringify(shoes, null, 2));
 }
 
-app.get('/', (req, res) => {
-  res.render('index', { shoes: getShoes() });
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+if (!fs.existsSync('temp')) fs.mkdirSync('temp');
+const upload = multer({ dest: 'temp/' });
+
+const ADMIN_USER = 'dad';
+const ADMIN_PASS = 'customshoes';
+
+app.get('/', async (req, res) => {
+  try {
+    let shoes;
+    if (IS_PROD) {
+      const result = await pool.query('SELECT * FROM shoes ORDER BY created_at DESC');
+      shoes = result.rows;
+    } else {
+      shoes = getShoes();
+    }
+    res.render('index', { shoes });
+  } catch (err) {
+    console.error(err);
+    res.render('index', { shoes: [] });
+  }
 });
 
 app.get('/admin', (req, res) => {
-  res.render('admin', { shoes: getShoes(), error: null, loggedIn: false });
+  res.render('admin', { shoes: [], error: null, loggedIn: false });
 });
 
-app.post('/admin', (req, res) => {
+app.post('/admin', async (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    res.render('admin', { shoes: getShoes(), error: null, loggedIn: true });
+    try {
+      let shoes;
+      if (IS_PROD) {
+        const result = await pool.query('SELECT * FROM shoes ORDER BY created_at DESC');
+        shoes = result.rows;
+      } else {
+        shoes = getShoes();
+      }
+      res.render('admin', { shoes, error: null, loggedIn: true });
+    } catch (err) {
+      res.render('admin', { shoes: [], error: null, loggedIn: true });
+    }
   } else {
     res.render('admin', { shoes: [], error: 'Wrong username or password.', loggedIn: false });
   }
@@ -58,13 +105,10 @@ app.post('/admin', (req, res) => {
 
 app.post('/upload', upload.single('shoeImage'), async (req, res) => {
   try {
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'custom-shoes'
-    });
-    fs.unlinkSync(req.file.path); // delete temp file
+    const result = await cloudinary.uploader.upload(req.file.path, { folder: 'custom-shoes' });
+    fs.unlinkSync(req.file.path);
 
-    const shoes = getShoes();
-    shoes.push({
+    const shoe = {
       id: Date.now(),
       title: req.body.title || '',
       description: req.body.description || '',
@@ -72,8 +116,18 @@ app.post('/upload', upload.single('shoeImage'), async (req, res) => {
       featured: req.body.featured === 'on',
       image: result.secure_url,
       public_id: result.public_id
-    });
-    saveShoes(shoes);
+    };
+
+    if (IS_PROD) {
+      await pool.query(
+        'INSERT INTO shoes (title, description, brand, featured, image, public_id) VALUES ($1, $2, $3, $4, $5, $6)',
+        [shoe.title, shoe.description, shoe.brand, shoe.featured, shoe.image, shoe.public_id]
+      );
+    } else {
+      const shoes = getShoes();
+      shoes.push(shoe);
+      saveShoes(shoes);
+    }
     res.redirect('/admin');
   } catch (err) {
     console.error(err);
@@ -83,14 +137,29 @@ app.post('/upload', upload.single('shoeImage'), async (req, res) => {
 
 app.post('/delete', async (req, res) => {
   const { id } = req.body;
-  let shoes = getShoes();
-  const shoe = shoes.find(s => s.id == id);
-  if (shoe && shoe.public_id) {
-    await cloudinary.uploader.destroy(shoe.public_id);
+  try {
+    if (IS_PROD) {
+      const result = await pool.query('SELECT public_id FROM shoes WHERE id = $1', [id]);
+      if (result.rows.length > 0 && result.rows[0].public_id) {
+        await cloudinary.uploader.destroy(result.rows[0].public_id);
+      }
+      await pool.query('DELETE FROM shoes WHERE id = $1', [id]);
+    } else {
+      let shoes = getShoes();
+      const shoe = shoes.find(s => s.id == id);
+      if (shoe && shoe.public_id) await cloudinary.uploader.destroy(shoe.public_id);
+      shoes = shoes.filter(s => s.id != id);
+      saveShoes(shoes);
+    }
+  } catch (err) {
+    console.error(err);
   }
-  shoes = shoes.filter(s => s.id != id);
-  saveShoes(shoes);
   res.redirect('/admin');
 });
 
-app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));
+initDB().then(() => {
+  app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));
+}).catch(err => {
+  console.error('DB init failed:', err);
+  process.exit(1);
+});
