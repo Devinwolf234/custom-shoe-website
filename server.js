@@ -4,6 +4,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
+const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,7 +43,6 @@ async function initDB() {
   `);
 }
 
-// Local JSON fallback
 function getShoes() {
   try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'shoes.json'), 'utf8')); }
   catch { return []; }
@@ -54,6 +54,13 @@ function saveShoes(shoes) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(session({
+  secret: 'retrojordansecret123',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 1000 * 60 * 60 * 24 }  // stays logged in for 24 hours
+}));
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -79,13 +86,27 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.get('/admin', (req, res) => {
-  res.render('admin', { shoes: [], error: null, loggedIn: false });
+app.get('/admin', async (req, res) => {
+  try {
+    let shoes = [];
+    if (req.session.loggedIn) {
+      if (IS_PROD) {
+        const result = await pool.query('SELECT * FROM shoes ORDER BY created_at DESC');
+        shoes = result.rows;
+      } else {
+        shoes = getShoes();
+      }
+    }
+    res.render('admin', { shoes, error: null, loggedIn: req.session.loggedIn || false });
+  } catch (err) {
+    res.render('admin', { shoes: [], error: null, loggedIn: false });
+  }
 });
 
 app.post('/admin', async (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USER && password === ADMIN_PASS) {
+    req.session.loggedIn = true;
     try {
       let shoes;
       if (IS_PROD) {
@@ -104,6 +125,7 @@ app.post('/admin', async (req, res) => {
 });
 
 app.post('/upload', upload.single('shoeImage'), async (req, res) => {
+  if (!req.session.loggedIn) return res.redirect('/admin');
   try {
     const result = await cloudinary.uploader.upload(req.file.path, { folder: 'custom-shoes' });
     fs.unlinkSync(req.file.path);
@@ -136,6 +158,7 @@ app.post('/upload', upload.single('shoeImage'), async (req, res) => {
 });
 
 app.post('/delete', async (req, res) => {
+  if (!req.session.loggedIn) return res.redirect('/admin');
   const { id } = req.body;
   try {
     if (IS_PROD) {
@@ -154,6 +177,11 @@ app.post('/delete', async (req, res) => {
   } catch (err) {
     console.error(err);
   }
+  res.redirect('/admin');
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
   res.redirect('/admin');
 });
 

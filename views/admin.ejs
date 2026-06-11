@@ -29,6 +29,9 @@
     <% } else { %>
 
       <div class="upload-box">
+        <div style="text-align:right; margin-bottom: 20px;">
+          <a href="/logout" style="color:#888; font-size:0.85rem; text-decoration:none; border:1px solid #444; padding:4px 12px; border-radius:4px;">Logout</a>
+        </div>
         <h2>Upload a new shoe</h2>
         <form action="/upload" method="POST" enctype="multipart/form-data">
           <input type="file" name="shoeImage" accept="image/*" required>
@@ -42,7 +45,7 @@
         </form>
       </div>
 
-      <h2>All Shoes</h2>
+      <h2 style="text-align:center; margin-bottom: 20px;">All Shoes</h2>
       <% if (shoes.length === 0) { %>
         <p class="empty">No shoes uploaded yet.</p>
       <% } else { %>
@@ -51,9 +54,11 @@
             <div class="shoe-card">
               <% if (shoe.featured) { %><span class="featured-badge">⭐ Featured</span><% } %>
               <img src="<%= shoe.image %>" alt="<%= shoe.title %>">
-              <p class="shoe-title"><%= shoe.title %></p>
-              <% if (shoe.brand) { %><p class="shoe-brand"><%= shoe.brand %></p><% } %>
-              <% if (shoe.description) { %><p><%= shoe.description %></p><% } %>
+              <div class="card-info">
+                <p class="shoe-title"><%= shoe.title %></p>
+                <% if (shoe.brand) { %><p class="shoe-brand"><%= shoe.brand %></p><% } %>
+                <% if (shoe.description) { %><p class="shoe-desc"><%= shoe.description %></p><% } %>
+              </div>
               <form action="/delete" method="POST">
                 <input type="hidden" name="id" value="<%= shoe.id %>">
                 <button class="delete-btn" type="submit">Delete</button>
