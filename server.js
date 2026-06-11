@@ -9,7 +9,6 @@ const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Cloudinary config
 cloudinary.config({
   cloud_name: 'dxq9l9ggo',
   api_key: '792473667246535',
@@ -18,12 +17,18 @@ cloudinary.config({
 
 const IS_PROD = !!process.env.DATABASE_URL;
 let pool;
+let sessionStore;
 
 if (IS_PROD) {
   const { Pool } = require('pg');
+  const pgSession = require('connect-pg-simple')(session);
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
+  });
+  sessionStore = new pgSession({
+    pool,
+    createTableIfMissing: true
   });
 }
 
@@ -55,10 +60,11 @@ function saveShoes(shoes) {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
+  store: IS_PROD ? sessionStore : null,
   secret: 'retrojordansecret123',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 }  // stays logged in for 24 hours
+  cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
 app.set('view engine', 'ejs');
