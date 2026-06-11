@@ -9,7 +9,7 @@
 <body>
 
   <header>
-    <h1>Retro Jordan Resales</h1>
+    <h1>Retro Jordan Resale</h1>
     <p class="tagline">Hand-Customized Shoes</p>
     <nav>
       <a href="https://instagram.com/retrojordanresale" target="_blank">Instagram</a>
@@ -38,7 +38,10 @@
       <div class="shoe-card"
         data-id="<%= shoe.id %>"
         data-brand="<%= shoe.brand || '' %>"
-        data-featured="<%= shoe.featured ? '1' : '0' %>">
+        data-featured="<%= shoe.featured ? '1' : '0' %>"
+        data-image="<%= shoe.image %>"
+        data-title="<%= shoe.title %>"
+        data-desc="<%= shoe.description || '' %>">
         <% if (shoe.featured) { %><span class="featured-badge">⭐ Featured</span><% } %>
         <img src="<%= shoe.image %>" alt="<%= shoe.title %>">
         <div class="card-info">
@@ -53,6 +56,19 @@
   <footer>
     <p>© Retro Jordan Resales. All rights reserved.</p>
   </footer>
+
+  <!-- Modal -->
+  <div id="modal">
+    <div id="modal-content">
+      <button id="modal-close">✕</button>
+      <img id="modal-img" src="" alt="">
+      <div id="modal-info">
+        <h2 id="modal-title"></h2>
+        <p id="modal-brand"></p>
+        <p id="modal-desc"></p>
+      </div>
+    </div>
+  </div>
 
   <script src="/js/script.js"></script>
 </body>
